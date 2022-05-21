@@ -5067,10 +5067,13 @@ MonoBehaviour:
   horizontalSpeed: 0
   isPaused: 0
   friction: 20
+  slideFriction: 5
+  aerialFriction: 0
   gravity: 2
   walkSpeed: 0
   moveRampUpTime: 5
   walkSpeedIncrease: 180
+  maxWalkSpeed: 0
   crouchSpeed: 45
   slideStrenght: 2.8
   slideFrictionMod: 35
@@ -5160,6 +5163,7 @@ GameObject:
   - component: {fileID: 7782378714052982459}
   - component: {fileID: 1524668968287512787}
   - component: {fileID: 5465727571561941639}
+  - component: {fileID: 7782378714052982460}
   m_Layer: 9
   m_Name: PlayerPrefabURP
   m_TagString: Untagged
@@ -5413,6 +5417,7 @@ MonoBehaviour:
   headbobVerticalStrength: 0.04
   headbobHorizontalStrength: 0.03
   headbobSpeed: 24
+  headBobThreshold: 3
   speedLinesMaxSpeed: 9
 --- !u!1 &5417199370167580939
 GameObject:
@@ -10352,6 +10357,18 @@ MonoBehaviour:
   crouch: left ctrl
   dash: left shift
   moveInputDir: {x: 0, y: 0}
+--- !u!114 &7782378714052982460
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2337716306038076510}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 81730a7d36185dc4db99ae757fcf9f71, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!114 &7974160765152675809
 MonoBehaviour:
   m_ObjectHideFlags: 0

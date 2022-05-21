@@ -34,9 +34,13 @@ public class PlayerMovement : MonoBehaviour
     {
         rb.AddForce(Physics.gravity * (rb.mass * rb.mass) * amount);
     }
-    public void ApplyFriction(float friction)
+    public void ApplyLinearFriction(float friction)
     {
         rb.AddForce(new Vector3(rb.velocity.x * -friction, 0, rb.velocity.z * -friction));
+    }
+    public void ApplyConstantFriction(float friction)
+    {
+        rb.AddForce(new Vector3(rb.velocity.x / (Mathf.Abs(rb.velocity.x)) * -friction, 0, rb.velocity.z / (Mathf.Abs(rb.velocity.z)) * -friction));
     }
     public void ApplyVerticalFriction(float friction)
     {
@@ -71,13 +75,12 @@ public class PlayerMovement : MonoBehaviour
 
         rb.AddForce(new Vector3(moveDir.x * (walkSpeed + (walkSpeedIncrease * (rampUpCounter / rampUpTime))), 0, moveDir.y * (walkSpeed + (walkSpeedIncrease * (rampUpCounter / rampUpTime)))));
     }
-    public void Slide(float strenght, bool grounded)
+    public void Slide(float strenght)
     {
 
         if (slideReady)
         {
-            if (grounded) { rb.AddForce(new Vector3(rb.velocity.x, 0, rb.velocity.z).normalized * strenght * 100); }
-            else { rb.AddForce(new Vector3(rb.velocity.x, -0.8f, rb.velocity.z).normalized * strenght * 100); }
+            rb.AddForce(new Vector3(rb.velocity.x, 0, rb.velocity.z).normalized * strenght * 100);
         }
         slideReady = false;
     }

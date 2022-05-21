@@ -20,6 +20,8 @@ public class PlayerController : MonoBehaviour
 
     [Header("External Forces")]
     public float friction;
+    public float slideFriction;
+    public float aerialFriction;
     public float gravity;
 
     [Header("Walking")]
@@ -297,38 +299,38 @@ public class PlayerController : MonoBehaviour
         switch (status)
         {
             case Status.grounded:
-                movement.ApplyFriction(friction);
+                movement.ApplyLinearFriction(friction);
                 movement.Walk(input.InputDir(), walkSpeed, walkSpeedIncrease, ref moveRampUpCounter, moveRampUpTime);
                 movement.ApplyGravity(gravity);
                 break;
             case Status.crouching:
-                movement.ApplyFriction(friction);
+                movement.ApplyLinearFriction(friction);
                 movement.Walk(input.InputDir(), crouchSpeed, 0, ref moveRampUpCounter, moveRampUpTime);
                 movement.ApplyGravity(gravity);
                 break;
             case Status.sliding:
-                movement.ApplyFriction(friction / slideFrictionMod);
-                movement.Slide(groundDetector.isGrounded ? slideStrenght : slideStrenght * 2, groundDetector.isGrounded);
+                movement.ApplyConstantFriction(slideFriction);
+                movement.Slide(slideStrenght);
                 movement.ApplyGravity(gravity);
                 break;
             case Status.wallrunning:
-                movement.ApplyFriction(friction);
+                movement.ApplyLinearFriction(friction);
                 movement.Wallrun(wallrunDetector.contactR, input.moveInputDir.y, wallrunSpeed, wallrunDetector.wallNormal);
                 movement.ApplyGravity(wallrunGravity);
                 break;
             case Status.airborne:
-                movement.ApplyFriction(friction / airFrictionMod);
+                movement.ApplyConstantFriction(aerialFriction);
                 movement.AirControl(input.InputDir(), airControlSpeed);
                 movement.ApplyGravity(gravity);
                 break;
             case Status.climbing:
-                movement.ApplyFriction(friction);
+                movement.ApplyLinearFriction(friction);
                 movement.Climb(input.InputDir(), climbSpeed);
                 movement.ApplyGravity(climbGravity);
                 movement.ApplyVerticalFriction(climbFriction);
                 break;
             case Status.dashholding:
-                movement.ApplyFriction(friction / airFrictionMod);
+                movement.ApplyLinearFriction(friction / airFrictionMod);
                 movement.AirControl(input.InputDir(), airControlSpeed);
                 movement.ApplyGravity(gravity);
                 movement.Dashhold(input.InputDir(), dashHoldMoveSpeed);
@@ -341,7 +343,7 @@ public class PlayerController : MonoBehaviour
         {
             ChangeStatus(Status.airborne);
         }
-        if (ceilingDetector.canStand && groundDetector.isGrounded && input.InputDir() != Vector2.zero && !movement.isDashing)
+        if (ceilingDetector.canStand && groundDetector.isGrounded && !movement.isDashing)
         {
             ChangeStatus(Status.grounded);
         }
@@ -349,7 +351,7 @@ public class PlayerController : MonoBehaviour
         {
             ChangeStatus(Status.crouching);
         }
-        if (input.PressedCrouch() && new Vector3(rb.velocity.x, 0, rb.velocity.z).magnitude > slideThreshold && !movement.isDashing)
+        if (input.PressedCrouch() && new Vector3(rb.velocity.x, 0, rb.velocity.z).magnitude > slideThreshold && !movement.isDashing) // && groundDetector.isGrounded)
         {
             ChangeStatus(Status.sliding);
         }
