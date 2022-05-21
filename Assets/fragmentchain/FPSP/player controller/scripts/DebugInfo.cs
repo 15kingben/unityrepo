@@ -18,7 +18,7 @@ public class DebugInfo : MonoBehaviour
         Debug.Log(controller);
         Debug.Log(controller.horizontalSpeed.ToString("0.00"));
         GUI.Box(new Rect(10, 10, 100, 100), "Debug");
-        GUI.Label(new Rect(20, 20, 80, 30), controller.horizontalSpeed.ToString("0.00"));
+        GUI.Label(new Rect(20, 30, 80, 30), controller.horizontalSpeed.ToString("0.00"));
         GUI.Label(new Rect(20, 60, 80, 30), controller.status.ToString());
     }
 }

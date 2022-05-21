@@ -235,7 +235,8 @@ public class PlayerController : MonoBehaviour
                 climbGravity = Mathf.Clamp(climbGravity, 0.0f, 9.5f);
                 break;
             case (Status.airborne):
-                transform.localScale = new Vector3(1, 1, 1);
+                // TODO: break this out of the switch case logic.
+                // transform.localScale = new Vector3(1, 1, 1);
                 if (input.PressedJump() && airJumpChargeAvailable > 0)
                 {
                     airJumpChargeAvailable--;
@@ -295,7 +296,7 @@ public class PlayerController : MonoBehaviour
         {
             ChangeStatus(Status.crouching);
         }
-        if (input.PressedCrouch() && new Vector3(rb.velocity.x, 0, rb.velocity.z).magnitude > slideThreshold) // && groundDetector.isGrounded)
+        if (input.PressedCrouch() && new Vector3(rb.velocity.x, 0, rb.velocity.z).magnitude > slideThreshold && groundDetector.isGrounded)
         {
             ChangeStatus(Status.sliding);
         }
