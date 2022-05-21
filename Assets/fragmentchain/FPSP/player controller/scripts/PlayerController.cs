@@ -4,7 +4,7 @@ using UnityEditor;
 using UnityEngine;
 
 
-public enum Status { grounded, crouching, vaulting, sliding, wallrunning, airborne, climbing, dashholding }
+public enum Status { grounded, crouching, vaulting, sliding, wallrunning, airborne, climbing }
 
 public class PlayerController : MonoBehaviour
 {
@@ -98,17 +98,6 @@ public class PlayerController : MonoBehaviour
     public float vaultHeight;
     public float vaultCamLerpSpeed;
 
-    [Header("Dashing")]
-    public float dashSlowMoFactor;
-    public float dashSpeed;
-    public float dashDist;
-    public float dashHoldMoveSpeed;
-    public float dashCooldown;
-    [HideInInspector]
-    public float dashCooldownTimer;
-    public GameObject dashTargetMarkerAir;
-    public GameObject dashTargetMarkerWall;
-
 
     [Header("References")]
     private PlayerInput input;
@@ -148,13 +137,6 @@ public class PlayerController : MonoBehaviour
         {
             DetermineMonitorables();
             RechargeAbilities();
-
-            if (input.ReleasedDash() || status != Status.airborne)
-            {
-                Time.timeScale = 1.0f;
-                Time.fixedDeltaTime = Time.timeScale * 0.02f;
-            }
-
             CamRotationUnwrap();
             ChooseStatus();
             FrictionToSlope();
@@ -259,38 +241,6 @@ public class PlayerController : MonoBehaviour
                     airJumpChargeAvailable--;
                     movement.AirborneJump(airborneJumpForce, airborneJumpControl, cam.transform.forward);
                 }
-                if (input.ReleasedDash() && dashCooldownTimer >= dashCooldown)
-                {
-                    dashCooldownTimer = 0.0f;
-                    Vector3 dashTarget;
-                    RaycastHit hit;
-                    if (Physics.Raycast(transform.position, cam.transform.forward, out hit, dashDist))
-                    {
-                        dashTarget = transform.position + cam.transform.forward * (hit.distance - 0.5f);
-                    }
-                    else
-                    {
-                        dashTarget = transform.position + cam.transform.forward * dashDist;
-                    }
-                    StartCoroutine(movement.Dash(dashSpeed, transform.position, dashTarget));
-                }
-                break;
-            case (Status.dashholding):
-                Time.timeScale = dashSlowMoFactor;
-                Time.fixedDeltaTime = Time.timeScale * 0.02f;
-
-                Vector3 dashTargetMark;
-                RaycastHit hitt;
-                if (Physics.Raycast(transform.position, cam.transform.forward, out hitt, dashDist))
-                {
-                    dashTargetMark = transform.position + cam.transform.forward * (hitt.distance - 0.5f);
-                    Instantiate(dashTargetMarkerWall, dashTargetMark, Quaternion.identity);
-                }
-                else
-                {
-                    dashTargetMark = transform.position + cam.transform.forward * dashDist;
-                    Instantiate(dashTargetMarkerAir, dashTargetMark, Quaternion.identity);
-                }
                 break;
         }
     }
@@ -329,12 +279,6 @@ public class PlayerController : MonoBehaviour
                 movement.ApplyGravity(climbGravity);
                 movement.ApplyVerticalFriction(climbFriction);
                 break;
-            case Status.dashholding:
-                movement.ApplyLinearFriction(friction / airFrictionMod);
-                movement.AirControl(input.InputDir(), airControlSpeed);
-                movement.ApplyGravity(gravity);
-                movement.Dashhold(input.InputDir(), dashHoldMoveSpeed);
-                break;
         }
     }
     void ChooseStatus()
@@ -343,33 +287,29 @@ public class PlayerController : MonoBehaviour
         {
             ChangeStatus(Status.airborne);
         }
-        if (ceilingDetector.canStand && groundDetector.isGrounded && !movement.isDashing)
+        if (ceilingDetector.canStand && groundDetector.isGrounded)
         {
             ChangeStatus(Status.grounded);
         }
-        if (input.PressedCrouch() && new Vector3(rb.velocity.x, 0, rb.velocity.z).magnitude < slideThreshold && !movement.isDashing)
+        if (input.PressedCrouch() && new Vector3(rb.velocity.x, 0, rb.velocity.z).magnitude < slideThreshold)
         {
             ChangeStatus(Status.crouching);
         }
-        if (input.PressedCrouch() && new Vector3(rb.velocity.x, 0, rb.velocity.z).magnitude > slideThreshold && !movement.isDashing) // && groundDetector.isGrounded)
+        if (input.PressedCrouch() && new Vector3(rb.velocity.x, 0, rb.velocity.z).magnitude > slideThreshold) // && groundDetector.isGrounded)
         {
             ChangeStatus(Status.sliding);
         }
-        if (input.InputDir().y > 0 && groundDetector.distToGround >= 0.5f && (wallrunDetector.contactR || wallrunDetector.contactL) && (currentCamRotation.y >= -wallrunMaxAngle && currentCamRotation.y <= wallrunMaxAngle) && new Vector3(rb.velocity.x, 0, rb.velocity.z).magnitude > wallrunSpeedThreshold && rb.velocity.y < 2.1 && wallrunReady && !movement.isDashing)
+        if (input.InputDir().y > 0 && groundDetector.distToGround >= 0.5f && (wallrunDetector.contactR || wallrunDetector.contactL) && (currentCamRotation.y >= -wallrunMaxAngle && currentCamRotation.y <= wallrunMaxAngle) && new Vector3(rb.velocity.x, 0, rb.velocity.z).magnitude > wallrunSpeedThreshold && rb.velocity.y < 2.1 && wallrunReady)
         {
             ChangeStatus(Status.wallrunning);
         }
-        if (input.InputDir().y > 0 && frontDetector.angleToPlayer < maxClimbApproachAngle && frontDetector.wallAngle > minClimbWallAngle && frontDetector.wallAngle < maxClimbWallAngle && frontDetector.obstacleHeightFromPlayer > 1.2 && frontDetector.distanceToObstacle < climbApproachDistance && rb.velocity.y > -0.25f && status != Status.sliding && !movement.isDashing)
+        if (input.InputDir().y > 0 && frontDetector.angleToPlayer < maxClimbApproachAngle && frontDetector.wallAngle > minClimbWallAngle && frontDetector.wallAngle < maxClimbWallAngle && frontDetector.obstacleHeightFromPlayer > 1.2 && frontDetector.distanceToObstacle < climbApproachDistance && rb.velocity.y > -0.25f && status != Status.sliding)
         {
             ChangeStatus(Status.climbing);
         }
-        if (ceilingDetector.distToCeiling > 2 && input.InputDir().y > 0 && frontDetector.obstacleDetected && frontDetector.angleToPlayer < maxVaultApproachAngle && frontDetector.wallAngle > minVaultWallAngle && frontDetector.wallAngle < maxVaultWallAngle && frontDetector.obstacleHeightFromPlayer <= vaultHeight && frontDetector.distanceToObstacle < vaultApproachDistance && !movement.isDashing)
+        if (ceilingDetector.distToCeiling > 2 && input.InputDir().y > 0 && frontDetector.obstacleDetected && frontDetector.angleToPlayer < maxVaultApproachAngle && frontDetector.wallAngle > minVaultWallAngle && frontDetector.wallAngle < maxVaultWallAngle && frontDetector.obstacleHeightFromPlayer <= vaultHeight && frontDetector.distanceToObstacle < vaultApproachDistance)
         {
             ChangeStatus(Status.vaulting);
-        }
-        if ((status == Status.airborne || status == Status.dashholding) && input.HoldDash() && !movement.isDashing && dashCooldownTimer >= dashCooldown)
-        {
-            ChangeStatus(Status.dashholding);
         }
     }
     void FrictionToSlope() //Adjusts friction to slope angle in order to not slide off
@@ -456,14 +396,8 @@ public class PlayerController : MonoBehaviour
     }
     void RechargeAbilities()
     {
-        //Dashing
-        if (status != Status.dashholding && !movement.isDashing)
-        {
-            if (dashCooldownTimer <= dashCooldown) dashCooldownTimer += Time.deltaTime;
-            else dashCooldownTimer = dashCooldown;
-        }
         //AirJumping
-        if (status != Status.airborne && status != Status.dashholding && !movement.isDashing)
+        if (status != Status.airborne)
         {
             if (airJumpChargeAvailable < airJumpCharge)
             {
@@ -483,7 +417,6 @@ public class PlayerController : MonoBehaviour
     }
     void InitialAbilityCharge()
     {
-        dashCooldownTimer = dashCooldown;
         airJumpChargeAvailable = airJumpCharge;
     }
     void DetermineMonitorables()
