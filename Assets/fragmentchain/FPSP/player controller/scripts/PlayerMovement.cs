@@ -48,7 +48,7 @@ public class PlayerMovement : MonoBehaviour
     }
     public void AirborneJump(float force, float dirForce, Vector3 dir)
     {
-        rb.velocity = new Vector3(rb.velocity.x/4, 0.0f, rb.velocity.z/4);
+        rb.velocity = new Vector3(rb.velocity.x / 4, 0.0f, rb.velocity.z / 4);
         rb.AddForce(new Vector3(0, force * 10, 0) + dir * dirForce * 10);
     }
     public void WallJump(float upForce, float range, float wallPush, Vector3 dir, Vector3 wallDir)
@@ -68,7 +68,7 @@ public class PlayerMovement : MonoBehaviour
         }
 
         moveDir = VectorSpace(moveDir);
-        
+
         rb.AddForce(new Vector3(moveDir.x * (walkSpeed + (walkSpeedIncrease * (rampUpCounter / rampUpTime))), 0, moveDir.y * (walkSpeed + (walkSpeedIncrease * (rampUpCounter / rampUpTime)))));
     }
     public void Slide(float strenght, bool grounded)
@@ -108,7 +108,7 @@ public class PlayerMovement : MonoBehaviour
     }
     public void Dashhold(Vector2 dir, float speed)
     {
-        
+
     }
     public IEnumerator Dash(float dashSpeed, Vector3 currPos, Vector3 targetPos)
     {

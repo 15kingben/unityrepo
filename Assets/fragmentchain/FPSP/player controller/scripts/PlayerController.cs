@@ -4,7 +4,7 @@ using UnityEditor;
 using UnityEngine;
 
 
-public enum Status { idle, walking, crouching, vaulting, sliding, wallrunning, airborne, climbing, dashholding }
+public enum Status { grounded, crouching, vaulting, sliding, wallrunning, airborne, climbing, dashholding }
 
 public class PlayerController : MonoBehaviour
 {
@@ -27,6 +27,7 @@ public class PlayerController : MonoBehaviour
     private float moveRampUpCounter;
     public float moveRampUpTime;
     public float walkSpeedIncrease;
+    public float maxWalkSpeed;
 
     [Header("Crouching & Sliding")]
     public float crouchSpeed;
@@ -40,18 +41,20 @@ public class PlayerController : MonoBehaviour
     private Vector3 wallrunNormalNew;
     private Vector3 wallrunNormalOld;
     private float wallrunCamLerp;
-        [Range(0.0f, 1.0f)] 
+    [Range(0.0f, 1.0f)]
     public float wallrunCamLerpSpeed;
-        [Tooltip("At what camera angle to keep wallrunning")] [Range(0.0f, 120.0f)] 
+    [Tooltip("At what camera angle to keep wallrunning")]
+    [Range(0.0f, 120.0f)]
     public float wallrunMaxAngle;
     private Vector3 currentCamRotation;
     private float wallrunCooldownTimer;
-        [Tooltip("Cooldown in seconds")] [Range(0.0f, 10.0f)] 
+    [Tooltip("Cooldown in seconds")]
+    [Range(0.0f, 10.0f)]
     public float wallrunCooldown;
     private bool wallrunReady;
     private float wallrunGravity;
     private float wallrunTimer;
-        [Tooltip("How fast gravity increases")] 
+    [Tooltip("How fast gravity increases")]
     public float wallrunFallSpeed;
     private Vector3 wallrunStartDir;
 
@@ -79,7 +82,7 @@ public class PlayerController : MonoBehaviour
     public float minClimbWallAngle;
     public float climbSpeed;
     private float climbTimer;
-        [Tooltip("How fast gravity increases")]
+    [Tooltip("How fast gravity increases")]
     public float climbHeight;
     private float climbGravity;
     public float climbFriction;
@@ -99,7 +102,7 @@ public class PlayerController : MonoBehaviour
     public float dashDist;
     public float dashHoldMoveSpeed;
     public float dashCooldown;
-        [HideInInspector]
+    [HideInInspector]
     public float dashCooldownTimer;
     public GameObject dashTargetMarkerAir;
     public GameObject dashTargetMarkerWall;
@@ -133,7 +136,7 @@ public class PlayerController : MonoBehaviour
         camController = GetComponent<CameraController>();
         cam = Camera.main;
 
-        status = Status.walking;
+        status = Status.grounded;
 
         InitialAbilityCharge();
     }
@@ -168,15 +171,7 @@ public class PlayerController : MonoBehaviour
     {
         switch (status)
         {
-            case Status.idle:
-                transform.localScale = new Vector3(1, 1, 1);
-                movement.slideReady = true;
-                if (input.PressedJump())
-                {
-                    movement.GroundedJump(groundedJumpForce);
-                }
-                break;
-            case Status.walking:
+            case Status.grounded:
                 transform.localScale = new Vector3(1, 1, 1);
                 movement.slideReady = true;
                 if (input.PressedJump())
@@ -301,11 +296,7 @@ public class PlayerController : MonoBehaviour
     {
         switch (status)
         {
-            case Status.idle:
-                movement.ApplyFriction(friction);
-                movement.ApplyGravity(gravity);
-                break;
-            case Status.walking:
+            case Status.grounded:
                 movement.ApplyFriction(friction);
                 movement.Walk(input.InputDir(), walkSpeed, walkSpeedIncrease, ref moveRampUpCounter, moveRampUpTime);
                 movement.ApplyGravity(gravity);
@@ -350,23 +341,19 @@ public class PlayerController : MonoBehaviour
         {
             ChangeStatus(Status.airborne);
         }
-        if (ceilingDetector.canStand && groundDetector.isGrounded && input.InputDir() == Vector2.zero && !movement.isDashing)
+        if (ceilingDetector.canStand && groundDetector.isGrounded && input.InputDir() != Vector2.zero && !movement.isDashing)
         {
-            ChangeStatus(Status.idle);
+            ChangeStatus(Status.grounded);
         }
-        if (ceilingDetector.canStand && groundDetector.isGrounded && input.InputDir() != Vector2.zero && !movement.isDashing) 
-        {
-            ChangeStatus(Status.walking);
-        }
-        if (input.PressedCrouch() && new Vector3 (rb.velocity.x, 0, rb.velocity.z).magnitude < slideThreshold && !movement.isDashing)
+        if (input.PressedCrouch() && new Vector3(rb.velocity.x, 0, rb.velocity.z).magnitude < slideThreshold && !movement.isDashing)
         {
             ChangeStatus(Status.crouching);
         }
-        if (input.PressedCrouch() && new Vector3 (rb.velocity.x, 0, rb.velocity.z).magnitude > slideThreshold && !movement.isDashing)
+        if (input.PressedCrouch() && new Vector3(rb.velocity.x, 0, rb.velocity.z).magnitude > slideThreshold && !movement.isDashing)
         {
             ChangeStatus(Status.sliding);
         }
-        if(input.InputDir().y > 0 && groundDetector.distToGround >= 0.5f && (wallrunDetector.contactR || wallrunDetector.contactL) && (currentCamRotation.y >= -wallrunMaxAngle && currentCamRotation.y <= wallrunMaxAngle) && new Vector3(rb.velocity.x, 0, rb.velocity.z).magnitude > wallrunSpeedThreshold && rb.velocity.y < 2.1 && wallrunReady && !movement.isDashing)
+        if (input.InputDir().y > 0 && groundDetector.distToGround >= 0.5f && (wallrunDetector.contactR || wallrunDetector.contactL) && (currentCamRotation.y >= -wallrunMaxAngle && currentCamRotation.y <= wallrunMaxAngle) && new Vector3(rb.velocity.x, 0, rb.velocity.z).magnitude > wallrunSpeedThreshold && rb.velocity.y < 2.1 && wallrunReady && !movement.isDashing)
         {
             ChangeStatus(Status.wallrunning);
         }
@@ -378,14 +365,14 @@ public class PlayerController : MonoBehaviour
         {
             ChangeStatus(Status.vaulting);
         }
-        if((status == Status.airborne || status == Status.dashholding) && input.HoldDash() && !movement.isDashing && dashCooldownTimer >= dashCooldown)
+        if ((status == Status.airborne || status == Status.dashholding) && input.HoldDash() && !movement.isDashing && dashCooldownTimer >= dashCooldown)
         {
             ChangeStatus(Status.dashholding);
         }
     }
     void FrictionToSlope() //Adjusts friction to slope angle in order to not slide off
     {
-        if(status == Status.sliding)
+        if (status == Status.sliding)
         {
             coll.sharedMaterial.dynamicFriction = 0;
             coll.sharedMaterial.staticFriction = 0;
@@ -424,10 +411,6 @@ public class PlayerController : MonoBehaviour
                 StartCoroutine(camController.WallrunCamTilt(cam.transform.localRotation, wallrunDetector.contactR));
                 wallrunTimer = 0.0f;
             }
-            if (lastStatus == Status.walking && status == Status.idle) //On change from walking to idle
-            {
-                moveRampUpCounter = 0.0f;
-            }
             if (status == Status.climbing) //On every change to climbing
             {
                 climbTimer = 0.0f;
@@ -441,7 +424,7 @@ public class PlayerController : MonoBehaviour
             }
             if (status == Status.sliding) //On every change to sliding
             {
-                transform.position = new Vector3(transform.position.x, transform.position.y -0.5f, transform.position.z);
+                transform.position = new Vector3(transform.position.x, transform.position.y - 0.5f, transform.position.z);
             }
             if (lastStatus == Status.sliding && status == Status.crouching) //On cange from sliding to crouching
             {
@@ -472,15 +455,15 @@ public class PlayerController : MonoBehaviour
     void RechargeAbilities()
     {
         //Dashing
-        if(status != Status.dashholding && !movement.isDashing)
+        if (status != Status.dashholding && !movement.isDashing)
         {
-            if(dashCooldownTimer <= dashCooldown) dashCooldownTimer += Time.deltaTime;
+            if (dashCooldownTimer <= dashCooldown) dashCooldownTimer += Time.deltaTime;
             else dashCooldownTimer = dashCooldown;
         }
         //AirJumping
-        if(status != Status.airborne && status != Status.dashholding && !movement.isDashing)
+        if (status != Status.airborne && status != Status.dashholding && !movement.isDashing)
         {
-            if(airJumpChargeAvailable < airJumpCharge)
+            if (airJumpChargeAvailable < airJumpCharge)
             {
                 if (airJumpChargeCooldownTimer <= airJumpChargeCooldown) airJumpChargeCooldownTimer += Time.deltaTime;
                 else

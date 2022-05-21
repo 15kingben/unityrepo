@@ -6,17 +6,18 @@ public class CameraController : MonoBehaviour
 {
 
     [Header("Mouse Sensitivity")]
-        [Range(0.0f, 20.0f)]
+    [Range(0.0f, 20.0f)]
     public float mouseSensitivity;
     public float initialMouseSensitivity;
-        [Tooltip("Divide mouse sensitivity by this when sliding")] [Range(1.0f, 4.0f)]
+    [Tooltip("Divide mouse sensitivity by this when sliding")]
+    [Range(1.0f, 4.0f)]
     public float slideMouseSensMod;
 
     [Header("Rotation Clamping")]
     private float currentCamPitch;
 
     [Header("Wallrun Tilting")]
-        [Range(0.0f, 1.0f)]
+    [Range(0.0f, 1.0f)]
     public float tiltSpeed;
     public float alignSpeed;
     private float wallrunCamTiltCounter;
@@ -30,6 +31,7 @@ public class CameraController : MonoBehaviour
     public float headbobVerticalStrength;
     public float headbobHorizontalStrength;
     public float headbobSpeed;
+    public float headBobThreshold;
     private float headbobTimer;
     private Vector3 initalCamLocalPos;
     private float camLocalPosReturnTimer;
@@ -65,11 +67,11 @@ public class CameraController : MonoBehaviour
 
             switch (controller.status)
             {
-                case Status.walking:
+                case Status.grounded:
                     mouseSensitivity = initialMouseSensitivity;
                     mouseSensToTimescale();
                     DefaultCameraUpdate();
-                    Headbob();
+                    Headbob(controller.horizontalSpeed);
                     break;
 
                 case Status.wallrunning:
@@ -126,7 +128,7 @@ public class CameraController : MonoBehaviour
         return;
     }
     void WallrunCameraUpdate()
-    {  
+    {
         cam.transform.Rotate(0f, (Input.GetAxis("Mouse X") * mouseSensitivity) * 100 * Time.deltaTime, 0f, Space.World); // Only cam is rotated, not the player body
 
         //Camera Pitch Clamping system
@@ -229,13 +231,17 @@ public class CameraController : MonoBehaviour
         cam.transform.parent = this.transform;
         yield return null;
     }
-    void Headbob()
+    void Headbob(float horizontalSpeed)
     {
+        if (horizontalSpeed < headBobThreshold)
+        {
+            return;
+        }
         cam.transform.localPosition = new Vector3(initalCamLocalPos.x + Mathf.Sin(headbobTimer / 2) * headbobHorizontalStrength, initalCamLocalPos.y + Mathf.Sin(headbobTimer) * headbobVerticalStrength, initalCamLocalPos.z);
 
         if (Mathf.Cos(headbobTimer) <= 0)
         {
-        headbobTimer += Time.deltaTime * headbobSpeed;
+            headbobTimer += Time.deltaTime * headbobSpeed;
         }
         else
         {
@@ -257,7 +263,7 @@ public class CameraController : MonoBehaviour
     void CamRotationUnwrap()
     {
         float angle = Vector3.Angle(transform.forward, cam.transform.forward);
-        if(cam.transform.forward.y < 0)
+        if (cam.transform.forward.y < 0)
         {
             angle = -angle;
         }
